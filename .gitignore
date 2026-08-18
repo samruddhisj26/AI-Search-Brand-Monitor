@@ -1,0 +1,8 @@
+brand_monitor.db
+*.db
+__pycache__/
+*.pyc
+.venv/
+output/
+board_data.json
+trello_state.json
