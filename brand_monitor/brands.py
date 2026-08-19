@@ -125,9 +125,3 @@ def get_all_keywords():
                 seen.add(kw)
                 keywords.append(kw)
     return keywords
-
-
-if __name__ == "__main__":
-    print(f"Loaded {len(BRANDS)} brands across {len(set(b['category'] for b in BRANDS))} categories:")
-    for b in BRANDS:
-        print(f"  {b['category']:30s} → {b['name']}")

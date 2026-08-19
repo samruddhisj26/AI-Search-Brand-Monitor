@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
-brand-monitor/runner.py — Multi-brand orchestrator: query → analyze → dashboard
+brand_monitor/runner.py — Multi-brand orchestrator: query → analyze → dashboard
 
-Usage:
-  ./runner.py                          # Process all brands
-  ./runner.py --brand "Figma"          # Process one brand
-  ./runner.py --add "Brand" kw1 kw2    # Add to brands.py (manual edit)
+Not run directly. `process_brand()` and `run_multi_brand_cycle()` are called
+by `brand-monitor scan` (see cli.py's `_cmd_scan()`), which handles both the
+single-brand (`--brand NAME`) and all-brands flows.
 
 Produces:
   1. Rich terminal dashboard (stdout)
@@ -15,17 +14,15 @@ Produces:
 
 import json
 import os
-import sys
 import time
 from datetime import datetime, timedelta, timezone
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from db import init_db, log_query, save_analysis, get_previous_analysis, save_report
-from query import run_queries
-from analyze import analyze_all
-from dashboard import render_full_dashboard
-from brands import BRANDS, get_brand_keywords, get_brand_category
+from . import config
+from .db import init_db, log_query, save_analysis, get_previous_analysis, save_report
+from .query import run_queries
+from .analyze import analyze_all
+from .dashboard import render_full_dashboard
+from .brands import BRANDS, get_brand_keywords, get_brand_category
 
 
 def process_brand(brand_def):
@@ -114,8 +111,9 @@ def run_multi_brand_cycle():
     render_full_dashboard(all_results, brand_info)
 
     # ── Save output ──
-    os.makedirs(os.path.join(os.path.dirname(__file__), "output"), exist_ok=True)
-    output_path = os.path.join(os.path.dirname(__file__), "output", "latest-dashboard.txt")
+    output_dir = config.get_output_dir()
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, "latest-dashboard.txt")
 
     # Capture rich output to file (strip ANSI for compatibility)
     try:
@@ -138,23 +136,3 @@ def run_multi_brand_cycle():
         print(f"\n[Could not save dashboard: {e}]")
 
     return all_results
-
-
-if __name__ == "__main__":
-    if not os.environ.get("OPENROUTER_API_KEY"):
-        print("❌ OPENROUTER_API_KEY not set. Run: export OPENROUTER_API_KEY=...")
-        sys.exit(1)
-
-    if len(sys.argv) > 1 and sys.argv[1] == "--brand" and len(sys.argv) > 2:
-        # Single brand mode
-        brand_name = sys.argv[2]
-        matches = [b for b in BRANDS if b["name"].lower() == brand_name.lower()]
-        if not matches:
-            print(f"❌ Brand '{brand_name}' not found in brands.py")
-            sys.exit(1)
-        init_db()
-        analyses = process_brand(matches[0])
-        brand_info = {matches[0]["name"]: {"category": matches[0]["category"]}}
-        render_full_dashboard({matches[0]["name"]: analyses}, brand_info)
-    else:
-        run_multi_brand_cycle()

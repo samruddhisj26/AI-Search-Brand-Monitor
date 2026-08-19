@@ -6,17 +6,26 @@ analyzes each one, and populates the analysis table.
 """
 import json
 import os
-import sys
 import time
 from datetime import datetime, timezone
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from db import get_conn, save_analysis
-from analyze import analyze_response
+from . import config
+from .db import get_conn, save_analysis
+from .analyze import analyze_response
 
 
 def main():
+    """Reprocess unanalyzed query_log rows. Returns an int exit code (0 on
+    success, 1 if the API key is missing) rather than calling sys.exit(), so
+    callers (e.g. cli.py's main(argv), which always RETURNS an int) can
+    propagate it without SystemExit escaping the dispatch guard."""
+    config.load_env()
+    try:
+        config.require_api_key()
+    except RuntimeError as e:
+        print(f"❌ {e}")
+        return 1
+
     conn = get_conn()
     
     # Get all unanalyzed queries
@@ -36,8 +45,8 @@ def main():
         count = conn.execute("SELECT COUNT(*) FROM query_log").fetchone()[0]
         print(f"Total queries in DB: {count}")
         conn.close()
-        return
-    
+        return 0
+
     total = len(rows)
     success = 0
     failed = 0
@@ -110,18 +119,19 @@ def main():
     
     # Import brands.py for categories, but gracefully handle
     try:
-        from brands import BRANDS
+        from .brands import BRANDS
         for b in BRANDS:
             brand_info[b["name"]] = {"category": b["category"]}
     except ImportError:
         pass
-    
+
     # Render dashboard
-    from dashboard import render_full_dashboard, build_leaderboard, build_competitive_map
+    from .dashboard import render_full_dashboard, build_leaderboard, build_competitive_map
     
     # Save output to file
-    os.makedirs(os.path.join(os.path.dirname(__file__), "output"), exist_ok=True)
-    output_path = os.path.join(os.path.dirname(__file__), "output", "latest-dashboard.txt")
+    output_dir = config.get_output_dir()
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, "latest-dashboard.txt")
     
     # Capture rich output to string
     from rich.text import Text
@@ -148,7 +158,7 @@ def main():
     print(f"\n[Dashboard summary saved to {output_path}]")
     
     # Also generate report format
-    from report import generate_report, detect_changes, build_previous_lookup
+    from .report import generate_report, detect_changes, build_previous_lookup
     
     # For first run, no previous data to compare
     report_lines = []
@@ -195,7 +205,7 @@ def main():
         
         report_lines.append("")
     
-    report_path = os.path.join(os.path.dirname(__file__), "output", "baseline-report.txt")
+    report_path = os.path.join(output_dir, "baseline-report.txt")
     with open(report_path, "w") as f:
         f.write("\n".join(report_lines))
     
@@ -204,12 +214,6 @@ def main():
     # Print full results to stdout for the cron delivery
     print("\n\n=== FULL DASHBOARD ===")
     print("\n".join(report_lines))
-    
+
     conn.close()
-
-
-if __name__ == "__main__":
-    if not os.environ.get("OPENROUTER_API_KEY"):
-        print("❌ OPENROUTER_API_KEY not set.")
-        sys.exit(1)
-    main()
+    return 0

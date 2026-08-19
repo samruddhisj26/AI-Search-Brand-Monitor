@@ -3,21 +3,13 @@ brand-monitor/analyze.py — Analyze AI responses for brand mention, sentiment, 
 """
 
 import json
-import os
 import time
 import urllib.request
 import urllib.error
 
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-OPENROUTER_BASE = "https://openrouter.ai/api/v1/chat/completions"
-ANALYSIS_MODEL = os.environ.get("ANALYSIS_MODEL", "openai/gpt-4o-mini")
+from . import config
 
-HEADERS = {
-    "Content-Type": "application/json",
-    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-    "HTTP-Referer": "https://github.com/samruddhi/brand-monitor",
-    "X-Title": "Brand Monitor Analysis",
-}
+OPENROUTER_BASE = "https://openrouter.ai/api/v1/chat/completions"
 
 
 def analyze_response(brand_name, platform, keyword, response_text):
@@ -59,7 +51,7 @@ def analyze_response(brand_name, platform, keyword, response_text):
     )
 
     payload = json.dumps({
-        "model": ANALYSIS_MODEL,
+        "model": config.get_analysis_model(),
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -71,7 +63,7 @@ def analyze_response(brand_name, platform, keyword, response_text):
     req = urllib.request.Request(
         OPENROUTER_BASE,
         data=payload,
-        headers=HEADERS,
+        headers=config.get_headers(title=f"{config.APP_NAME} — analysis"),
         method="POST",
     )
 
@@ -133,15 +125,3 @@ def analyze_all(brand_name, query_results):
         analyses.append(analysis)
         time.sleep(0.5)  # Rate limit buffer
     return analyses
-
-
-if __name__ == "__main__":
-    # Test
-    test_response = (
-        "There are several great AI coding agents in 2026. "
-        "Hermes Agent by Nous Research is a popular choice for developers who want "
-        "a self-improving agent with persistent memory. It compares well against "
-        "OpenClaw and Claude Code. I'd recommend Hermes for its skill-learning capabilities."
-    )
-    result = analyze_response("Hermes Agent", "chatgpt", "best AI coding agent", test_response)
-    print(json.dumps(result, indent=2))
