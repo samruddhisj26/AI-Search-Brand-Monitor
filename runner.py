@@ -39,8 +39,8 @@ def process_brand(brand_def):
     # Run queries
     query_results = run_queries(name, keywords)
 
-    # Log to DB
-    for q in query_results:
+    # Log to DB, keeping each row's id so we can attach its analysis below
+    query_log_ids = [
         log_query(
             brand_id=0,
             brand_name=name,
@@ -50,16 +50,28 @@ def process_brand(brand_def):
             raw_response=q["response"],
             error=q["error"],
         )
+        for q in query_results
+    ]
 
     # Analyze
     analyses = analyze_all(name, query_results)
     print(f"  ✓ {len(analyses)} analyses complete")
 
-    # Add platform/keyword to each analysis for the dashboard
+    # Add platform/keyword to each analysis for the dashboard, and persist to DB
     for i, a in enumerate(analyses):
         if i < len(query_results):
             a["platform"] = query_results[i]["platform"]
             a["keyword"] = query_results[i]["keyword"]
+        if i < len(query_log_ids):
+            save_analysis(
+                query_log_id=query_log_ids[i],
+                brand_mentioned=a.get("brand_mentioned", False),
+                sentiment=a.get("sentiment"),
+                accuracy=a.get("accuracy"),
+                competitors=a.get("competitors", []),
+                visibility_score=a.get("visibility_score", 0),
+                summary=a.get("summary", ""),
+            )
 
     return analyses
 

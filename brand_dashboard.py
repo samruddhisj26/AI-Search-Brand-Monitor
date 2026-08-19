@@ -14,8 +14,8 @@ from datetime import datetime, timezone
 from collections import Counter
 
 PORT = 8766
-DB_PATH = "/opt/data/brand-monitor/brand_monitor.db"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(SCRIPT_DIR, "brand_monitor.db")
 
 
 def get_conn():
@@ -349,14 +349,14 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
 if __name__ == "__main__":
     if not os.path.exists(DB_PATH):
         print(f"⚠ Database not found at {DB_PATH}")
-        print(f"  Run the scanner first: cd /opt/data/brand-monitor && python3 runner.py")
+        print(f"  Run the scanner first: cd {SCRIPT_DIR} && python3 runner.py")
         sys.exit(1)
 
     print(f"📊 Brand Monitor Dashboard")
     print(f"   Open: http://localhost:{PORT}")
     print(f"   Data: {DB_PATH}")
     print(f"   Press Ctrl+C to stop")
-    server = http.server.HTTPServer(("0.0.0.0", PORT), DashboardHandler)
+    server = http.server.HTTPServer(("127.0.0.1", PORT), DashboardHandler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
