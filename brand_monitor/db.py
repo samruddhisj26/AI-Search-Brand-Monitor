@@ -4,13 +4,13 @@ brand-monitor/db.py — SQLite database layer
 
 import sqlite3
 import json
-import os
 from datetime import datetime, timedelta
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "brand_monitor.db")
+from . import config
 
 def get_conn():
-    conn = sqlite3.connect(DB_PATH)
+    config.ensure_db_dir()
+    conn = sqlite3.connect(config.get_db_path())
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
@@ -192,6 +192,6 @@ def get_reports(brand_id, limit=10):
     return [dict(r) for r in rows]
 
 
-if __name__ == "__main__":
+def main():
     init_db()
-    print("Database initialized at", DB_PATH)
+    print("Database initialized at", config.get_db_path())

@@ -3,20 +3,13 @@ brand-monitor/query.py — Query AI platforms via OpenRouter API
 """
 
 import json
-import os
 import time
 import urllib.request
 import urllib.error
 
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-OPENROUTER_BASE = "https://openrouter.ai/api/v1/chat/completions"
+from . import config
 
-HEADERS = {
-    "Content-Type": "application/json",
-    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-    "HTTP-Referer": "https://github.com/samruddhi/brand-monitor",
-    "X-Title": "Brand Monitor",
-}
+OPENROUTER_BASE = "https://openrouter.ai/api/v1/chat/completions"
 
 # Model mapping per platform
 PLATFORM_MODELS = {
@@ -74,7 +67,7 @@ def query_openrouter(platform, user_prompt, timeout=30, max_retries=2):
             req = urllib.request.Request(
                 OPENROUTER_BASE,
                 data=payload,
-                headers=HEADERS,
+                headers=config.get_headers(),
                 method="POST",
             )
             with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -140,17 +133,3 @@ def run_queries(brand_name, keywords=None):
             time.sleep(1)  # Rate limit buffer
 
     return results
-
-
-if __name__ == "__main__":
-    # Quick test
-    if not OPENROUTER_API_KEY:
-        print("❌ OPENROUTER_API_KEY not set")
-        exit(1)
-
-    print("Testing OpenRouter connection...")
-    try:
-        resp = query_openrouter("chatgpt", "Say hello in one word.")
-        print(f"✓ Connection OK: {resp}")
-    except Exception as e:
-        print(f"✗ Connection failed: {e}")

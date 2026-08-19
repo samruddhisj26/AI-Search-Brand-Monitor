@@ -374,23 +374,3 @@ def render_full_dashboard(all_results, brand_info, changes=None):
         border_style="dim",
     )
     console.print(footer)
-
-
-if __name__ == "__main__":
-    # Test with sample data
-    from brands import BRANDS
-    brand_info = {b["name"]: {"category": b["category"]} for b in BRANDS}
-
-    test_results = {}
-    for b in BRANDS[:5]:
-        test_results[b["name"]] = [
-            {"brand_mentioned": True, "sentiment": "positive", "accuracy": "accurate",
-             "competitors": ["CompetitorA", "CompetitorB"], "visibility_score": 65,
-             "summary": "Mentioned as a top choice."},
-            {"brand_mentioned": False, "sentiment": None, "accuracy": None,
-             "competitors": ["CompetitorC"], "visibility_score": 0,
-             "summary": "Not mentioned."},
-        ]
-
-    render_full_dashboard(test_results, brand_info)
-    print("\n[Dashboard rendered successfully]")

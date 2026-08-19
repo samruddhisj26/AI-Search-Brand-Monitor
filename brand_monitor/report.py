@@ -5,6 +5,8 @@ brand-monitor/report.py — Generate report digest and detect changes
 import json
 from datetime import datetime, timedelta, timezone
 
+from . import config
+
 
 def detect_changes(brand_name, current_analyses, previous_analyses):
     """
@@ -184,7 +186,7 @@ def generate_report(brand_name, current_analyses, changes=None):
 
     lines.append("")
     lines.append(f"───")
-    lines.append(f"AI Search Brand Monitor · Samruddhi's Project")
+    lines.append(config.get_footer())
     lines.append(f"Generated: {now.strftime('%Y-%m-%d %H:%M UTC')}")
 
     return "\n".join(lines)
@@ -207,16 +209,3 @@ def build_previous_lookup(db_analyses):
                     "summary": a["summary"],
                 }
     return lookup
-
-
-if __name__ == "__main__":
-    # Test
-    test = [
-        {"platform": "chatgpt", "keyword": "best AI agent", "brand_mentioned": True,
-         "sentiment": "positive", "accuracy": "accurate", "competitors": ["OpenClaw"],
-         "visibility_score": 75, "summary": "Recommended highly"},
-        {"platform": "chatgpt", "keyword": "AI tools", "brand_mentioned": False,
-         "sentiment": None, "accuracy": None, "competitors": [], "visibility_score": 0,
-         "summary": "Not mentioned"},
-    ]
-    print(generate_report("Test Brand", test))

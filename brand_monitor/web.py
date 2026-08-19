@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
 """
-brand_dashboard.py — Web dashboard for the Brand Monitor.
-Run:  python3 brand_dashboard.py
+brand_monitor/web.py — Web dashboard for the Brand Monitor.
+Run:  brand-monitor serve
 Then open: http://localhost:8766
 """
 
 import http.server
 import json
 import os
-import sys
 import sqlite3
 from datetime import datetime, timezone
 from collections import Counter
 
+from . import config
+
 PORT = 8766
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(SCRIPT_DIR, "brand_monitor.db")
 
 
 def get_conn():
-    conn = sqlite3.connect(DB_PATH)
+    config.ensure_db_dir()
+    conn = sqlite3.connect(config.get_db_path())
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -134,7 +134,7 @@ HTML = """<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Brand Monitor Dashboard</title>
-<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/vue@3.5.13/dist/vue.global.prod.js" integrity="sha384-W/1Fp/LgAYO/oTn9Gs+PbeWuMuq1eQCnUMPCeg8POmMYchhzxctjEqtbiCIxDOON" crossorigin="anonymous"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #c9d1d9; padding: 20px; }
@@ -294,7 +294,7 @@ HTML = """<!DOCTYPE html>
   </div>
 
   <div style="text-align:center;color:#484f58;font-size:12px;padding:20px;">
-    Need a fresh scan? Run: <code style="background:#21262d;padding:2px 6px;border-radius:3px;">python3 runner.py</code>
+    Need a fresh scan? Run: <code style="background:#21262d;padding:2px 6px;border-radius:3px;">brand-monitor scan</code>
     · <a href="/api/data" style="color:#58a6ff;">API data</a>
   </div>
 </div>
@@ -331,13 +331,12 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
         elif self.path == "/api/data":
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             dash_data = build_dashboard_data()
             if dash_data:
                 self.wfile.write(json.dumps(dash_data).encode())
             else:
-                self.wfile.write(json.dumps({"error": "No data found. Run the scanner first: python3 runner.py"}).encode())
+                self.wfile.write(json.dumps({"error": "No data found. Run the scanner first: brand-monitor scan"}).encode())
         else:
             self.send_response(404)
             self.end_headers()
@@ -346,19 +345,34 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
         pass
 
 
-if __name__ == "__main__":
-    if not os.path.exists(DB_PATH):
-        print(f"⚠ Database not found at {DB_PATH}")
-        print(f"  Run the scanner first: cd {SCRIPT_DIR} && python3 runner.py")
-        sys.exit(1)
+def main(port=None):
+    """Start the dashboard server, bound to 127.0.0.1:<port> (default PORT).
+
+    Returns an int exit code rather than calling sys.exit(), so callers
+    (e.g. cli.py's main(argv), which always RETURNS an int) can propagate
+    it without SystemExit escaping the dispatch guard: 1 if the database
+    is missing, 0 on a clean shutdown.
+
+    Blocks in serve_forever() until interrupted. On KeyboardInterrupt, cleans
+    up the socket and re-raises so a caller (e.g. the CLI) can map it to its
+    own exit code instead of it being silently swallowed here.
+    """
+    bind_port = port if port is not None else PORT
+    db_path = config.get_db_path()
+    if not os.path.exists(db_path):
+        print(f"⚠ Database not found at {db_path}")
+        print(f"  Run the scanner first: brand-monitor scan")
+        return 1
 
     print(f"📊 Brand Monitor Dashboard")
-    print(f"   Open: http://localhost:{PORT}")
-    print(f"   Data: {DB_PATH}")
+    print(f"   Open: http://localhost:{bind_port}")
+    print(f"   Data: {db_path}")
     print(f"   Press Ctrl+C to stop")
-    server = http.server.HTTPServer(("127.0.0.1", PORT), DashboardHandler)
+    server = http.server.HTTPServer(("127.0.0.1", bind_port), DashboardHandler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         print("\nStopped.")
         server.server_close()
+        raise
+    return 0
