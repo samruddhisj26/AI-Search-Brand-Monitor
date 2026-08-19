@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-search-brand-monitor"
+description = "Track how brands appear in ChatGPT, Claude, and Perplexity answers. Multi-brand competitive dashboard with visibility scores, share of voice, competitive landscape, and actionable recommendations."
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "samruddhisj26"}]
+keywords = ["brand-monitoring", "ai", "competitive-intelligence", "dashboard", "chatgpt", "claude", "perplexity"]
+requires-python = ">=3.9"
+dependencies = [
+    "rich>=13.0",
+    "python-dotenv>=1.0",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Business",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Office/Business",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/samruddhisj26/AI-Search-Brand-Monitor"
+Issues = "https://github.com/samruddhisj26/AI-Search-Brand-Monitor/issues"
+
+[project.scripts]
+brand-monitor = "brand_monitor.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[tool.setuptools]
+packages = ["brand_monitor"]
+
+[tool.setuptools.dynamic]
+version = {attr = "brand_monitor.__version__"}
