@@ -96,6 +96,32 @@ brand-monitor scan --brand "Figma"   # scan one brand
 brand-monitor serve            # open http://127.0.0.1:8766
 ```
 
+## Claude Code plugin (optional)
+
+The repo also ships an optional [Claude Code](https://claude.com/claude-code) plugin (`plugins/brand-monitor/`) that wraps this CLI with slash commands. It does not replace the CLI and reimplements nothing — every command shells out to the `brand-monitor` binary, so **the CLI must already be installed** (see Install above) before the plugin is useful. There is no manifest field to declare an external binary dependency, so that prerequisite is on you; if `pipx ensurepath` plus a new shell was needed to get `brand-monitor` onto your `PATH`, that applies here too — the plugin can't find the command until the CLI can.
+
+This repo is both the marketplace and the plugin host:
+
+```bash
+claude plugin marketplace add <path-to-this-repo>
+claude plugin install brand-monitor@brand-monitor-tools
+```
+
+For local development/testing without installing, run Claude Code with the plugin loaded directly:
+
+```bash
+claude --plugin-dir ./plugins/brand-monitor
+```
+
+| Command | Cost | What it does |
+|---|---|---|
+| `/brand-monitor:status` | Free | Readiness check — CLI on `PATH`, API key set or not, current working directory, whether a database or past report already exist. Run this first in a new session. |
+| `/brand-monitor:scan <brand>` | **Spends money** | Runs the same ~18 paid OpenRouter calls per brand as `brand-monitor scan`. Requires naming a brand. |
+| `/brand-monitor:dashboard [port]` | Free | Starts the local dashboard in the background and reports its URL. Bound to `127.0.0.1` only, same as `brand-monitor serve`. |
+| `/brand-monitor:report` | Free | Summarizes `output/latest-dashboard.txt` from the current directory. Does not call the CLI. |
+
+The same working-directory rule from "Where data lands" above applies to the plugin: the database and reports resolve relative to the directory you're working in, not the plugin's install location. See `plugins/brand-monitor/README.md` for full details on each command.
+
 ## Scheduling
 
 There is no built-in scheduler. `scan` runs on demand, once, and exits. If you want recurring monitoring, schedule it yourself, e.g. with cron:

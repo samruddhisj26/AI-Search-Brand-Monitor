@@ -1,0 +1,19 @@
+{
+  "name": "brand-monitor-tools",
+  "description": "Claude Code plugins for driving the brand-monitor CLI: scan AI search platforms for brand mentions, launch the results dashboard, and read past scan reports.",
+  "owner": {
+    "name": "samruddhisj26"
+  },
+  "plugins": [
+    {
+      "name": "brand-monitor",
+      "source": "./plugins/brand-monitor",
+      "description": "Wraps the brand-monitor CLI to scan AI search platforms for brand mentions, launch the results dashboard, and read past scan reports.",
+      "version": "0.1.0",
+      "author": {
+        "name": "samruddhisj26"
+      },
+      "license": "MIT"
+    }
+  ]
+}
